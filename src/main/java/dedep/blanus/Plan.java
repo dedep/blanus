@@ -1,7 +1,5 @@
 package dedep.blanus;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -11,37 +9,74 @@ public class Plan {
     private List<List<Step>> orderedSteps;
     private List<Relationship> relationships;
 
-    private Predicate<ImmutablePair<Condition, Step>> existsRelationshipBindingEntry = entry ->
-            relationships.stream().anyMatch(relation ->
-                    entry.getKey().equals(relation.getRelationshipCondition()) && entry.getValue().equals(relation.getRelationship().getRight())
-    );
-
     public Plan(List<List<Step>> orderedSteps, List<Relationship> relationships) {
         this.orderedSteps = orderedSteps;
         this.relationships = relationships;
     }
 
     public boolean isComplete() {
-        return getStepPreconditionsMap().stream().allMatch(existsRelationshipBindingEntry);
+        return getSubgoals().stream().allMatch(planFulfillsSubgoal);
     }
 
-    public Optional<ImmutablePair<Condition, Step>> chooseSubGoal() {
-        return getStepPreconditionsMap().stream()
-                .filter(existsRelationshipBindingEntry.negate())
+    public Optional<Subgoal> chooseSubgoal() {
+        return getSubgoals().stream()
+                .filter(planFulfillsSubgoal.negate())
                 .findFirst();
     }
 
-    private List<ImmutablePair<Condition, Step>> getStepPreconditionsMap() {
-        Function<Step, List<ImmutablePair<Condition, Step>>> createStepConditionMap = step ->
+    public Plan solveSubgoal(Subgoal subgoal, List<MovementOperator> operators) {
+        if (subgoal.getCondition().isPresent()) {
+
+            return operators.stream()
+                    .filter(o -> o.getEffects().contains(subgoal.getCondition().get()))
+                    .findFirst()
+                    .map(operator -> {
+                        Step newStep = new Step(operator.getPreconditions(), operator.getEffects(), operator.getName(), new Random().nextInt());
+                        return addStepToPlan(newStep, subgoal.getStep());
+                    })
+                    .orElse(this);
+        }
+        return this;
+    }
+
+    private Plan addStepToPlan(Step stepToAdd, Step goalStep) {
+        List<List<Step>> newOrderedStepsList = new ArrayList<>();
+        newOrderedStepsList.addAll(orderedSteps);
+
+        int subgoalIndex = orderedSteps.indexOf(orderedSteps.stream().filter(os -> os.contains(goalStep)).findFirst().get());
+        List<Step> newStepsList = new ArrayList<>();
+        newStepsList.add(stepToAdd);
+
+        if (orderedSteps.get(subgoalIndex - 1).stream().anyMatch(step -> step instanceof InitStep)) {
+            newOrderedStepsList.add(subgoalIndex, newStepsList);
+        } else {
+            newStepsList.addAll(orderedSteps.get(subgoalIndex - 1));
+            newOrderedStepsList.remove(subgoalIndex - 1);
+            newOrderedStepsList.add(subgoalIndex - 1, newStepsList);
+        }
+
+        List<Relationship> newRelationships = new ArrayList<>(relationships);
+        newRelationships.addAll(bindSteps(stepToAdd, goalStep));
+
+        return new Plan(newOrderedStepsList, newRelationships);
+    }
+
+    private Predicate<Subgoal> planFulfillsSubgoal = entry ->
+            relationships.stream().anyMatch(relation ->
+                            entry.getCondition().equals(relation.getRelationshipCondition()) && entry.getStep().equals(relation.getRelationship().getRight())
+            );
+
+    private List<Subgoal> getSubgoals() {
+        Function<Step, List<Subgoal>> createStepConditionMap = step ->
                 step.getPreconditions()
                         .stream()
-                        .map(c -> ImmutablePair.of(c, step))
+                        .map(c -> new Subgoal(step, Optional.of(c)))
                         .collect(Collectors.toList());
 
         List<Step> flattenedSteps = orderedSteps.stream().flatMap((steps) -> steps.stream()).collect(Collectors.toList());
 
         return flattenedSteps.stream().map(createStepConditionMap).reduce(new ArrayList<>(), (o, o2) -> {
-            List<ImmutablePair<Condition, Step>> ret = new ArrayList<>(o);
+            List<Subgoal> ret = new ArrayList<>(o);
             ret.addAll(o2);
             return ret;
         });
@@ -52,13 +87,20 @@ public class Plan {
     }
 
     private static List<Relationship> bindSteps(Step initStep, Step goalStep) {
-        ImmutablePair<Step, Step> pair = ImmutablePair.of(initStep, goalStep);
         List<Condition> effects = initStep.getEffects();
         List<Condition> preconditions = goalStep.getPreconditions();
 
         return effects.stream()
                 .filter(preconditions::contains)
-                .map(c -> new Relationship(pair, c))
+                .map(c -> new Relationship(initStep, goalStep, c))
                 .collect(Collectors.toList());
+    }
+
+    public List<List<Step>> getSteps() {
+        return Collections.unmodifiableList(orderedSteps);
+    }
+
+    public List<Relationship> getRelationships() {
+        return Collections.unmodifiableList(relationships);
     }
 }

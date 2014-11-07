@@ -2,21 +2,31 @@ package dedep.blanus;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import java.util.Optional;
+
 public class Relationship {
     private ImmutablePair<Step, Step> relationship;
-    private Condition relationshipCondition;
+    private Optional<Condition> relationshipCondition;
 
-    public Relationship(ImmutablePair<Step, Step> relationship, Condition relationshipCondition) {
+    public Relationship(Step fromStep, Step toStep, Optional<Condition> relationshipCondition) {
         //todo: sprawdzić czy stepy-y posiadają ten warunek
-        this.relationship = relationship;
+        this.relationship = ImmutablePair.of(fromStep, toStep);
         this.relationshipCondition = relationshipCondition;
+    }
+
+    public Relationship(Step fromStep, Step toStep, Condition relationshipCondition) {
+        this(fromStep, toStep, Optional.ofNullable(relationshipCondition));
+    }
+
+    public Relationship(Step fromStep, Step toStep) {
+        this(fromStep, toStep, Optional.empty());
     }
 
     public ImmutablePair<Step, Step> getRelationship() {
         return relationship;
     }
 
-    public Condition getRelationshipCondition() {
+    public Optional<Condition> getRelationshipCondition() {
         return relationshipCondition;
     }
 }
