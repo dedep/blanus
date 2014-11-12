@@ -9,7 +9,6 @@ public class Relationship {
     private Optional<Condition> relationshipCondition;
 
     public Relationship(Step fromStep, Step toStep, Optional<Condition> relationshipCondition) {
-        //todo: sprawdzić czy stepy-y posiadają ten warunek
         this.relationship = ImmutablePair.of(fromStep, toStep);
         this.relationshipCondition = relationshipCondition;
     }
@@ -28,5 +27,9 @@ public class Relationship {
 
     public Optional<Condition> getRelationshipCondition() {
         return relationshipCondition;
+    }
+
+    public boolean containsStep(Step step) {
+        return relationship.left.equals(step) || relationship.right.equals(step);
     }
 }

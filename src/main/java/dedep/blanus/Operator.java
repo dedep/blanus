@@ -3,12 +3,12 @@ package dedep.blanus;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MovementOperator {
+public class Operator {
     private List<Condition> preconditions;
     private List<Condition> effects;
     private String name;
 
-    public MovementOperator(List<Condition> preconditions, List<Condition> effects, String name) {
+    public Operator(List<Condition> preconditions, List<Condition> effects, String name) {
         this.preconditions = preconditions;
         this.effects = effects;
         this.name = name;

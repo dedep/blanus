@@ -1,11 +1,12 @@
 package dedep.blanus;
 
+import dedep.blanus.param.Constant;
+import dedep.blanus.param.Variable;
+import dedep.blanus.util.Either;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 
 public class ProblemTest {
 
@@ -27,11 +28,11 @@ public class ProblemTest {
     }
 
     @Test
-    public void testUnsolvableProblem() {
+    public void testBindingInProblemSolving() {
         Condition leftLeg = new Condition("Left leg");
         Condition rightLeg = new Condition("Right leg");
 
-        MovementOperator addLeftLeg = new MovementOperator(
+        Operator addLeftLeg = new Operator(
                 Arrays.asList(rightLeg),
                 Arrays.asList(rightLeg, leftLeg),
                 "Add left leg"
@@ -45,7 +46,9 @@ public class ProblemTest {
 
         Optional<Plan> completePlan = legsProblem.createCompletePlan();
 
-        Assert.assertFalse(completePlan.isPresent());
+        Assert.assertTrue(completePlan.isPresent());
+        Assert.assertEquals(completePlan.get().getRelationships().size(), 3);
+        Assert.assertEquals(completePlan.get().getSteps().size(), 3);
     }
 
     @Test
@@ -115,8 +118,8 @@ public class ProblemTest {
 
         Plan plan = Plan.createMinimalPlan(initStep, goalStep);
 
-        MovementOperator mv1 = new MovementOperator(Collections.emptyList(), Arrays.asList(rightLeg), "pull right leg");
-        MovementOperator mv2 = new MovementOperator(Collections.singletonList(rightLeg), Arrays.asList(leftLeg), "pull left leg");
+        Operator mv1 = new Operator(Collections.emptyList(), Arrays.asList(rightLeg), "pull right leg");
+        Operator mv2 = new Operator(Collections.singletonList(rightLeg), Arrays.asList(leftLeg), "pull left leg");
 
         Problem legsProblem = new Problem(Arrays.asList(mv1, mv2), plan);
         Optional<Plan> resultPlan = legsProblem.createCompletePlan();
@@ -129,5 +132,126 @@ public class ProblemTest {
         Assert.assertEquals(resultPlan.get().getSteps().get(1).get(0).getName(), "pull right leg");
         Assert.assertEquals(resultPlan.get().getSteps().get(2).get(0).getName(), "pull left leg");
         Assert.assertEquals(resultPlan.get().getSteps().get(3).get(0).getName(), "Goal step");
+    }
+
+    @Test
+    public void shouldResolveConflictByPromotion() {
+        Condition a = new Condition("a");
+        Condition b = new Condition("b");
+        Condition c = new Condition("c");
+        Condition d = new Condition("d");
+
+        Step initStep = new InitStep(Collections.singletonList(b), "Init step", 0);
+        Step goalStep = new GoalStep(Arrays.asList(c, d), "Goal step", 3);
+        Step step1 = new Step(Arrays.asList(b), Arrays.asList(a), "step1", 1);
+        Step step2 = new Step(Arrays.asList(a), Arrays.asList(d), "step 2", 2);
+        Step step3 = new Step(Arrays.asList(b), Arrays.asList(c, a.negate()), "step 3", 4);
+
+        List<Relationship> relationshipList = Arrays.asList(
+            new Relationship(initStep, step1, b),
+            new Relationship(step1, step2, a),
+            new Relationship(step2, goalStep, d),
+            new Relationship(initStep, step3, b),
+            new Relationship(step3, goalStep, c)
+        );
+
+        List<List<Step>> steps = Arrays.asList(
+                Arrays.asList(initStep),
+                Arrays.asList(step1),
+                Arrays.asList(step3),
+                Arrays.asList(step2),
+                Arrays.asList(goalStep)
+        );
+
+        Plan plan = new Plan(steps, relationshipList);
+        Either<Plan, Conflict> newPlan = plan.resolveConflicts();
+
+        Assert.assertTrue(newPlan.getLeft().isPresent());
+        Assert.assertTrue(newPlan.getLeft().get().getSteps().get(3).contains(step3));
+        Assert.assertEquals(newPlan.getLeft().get().getSteps().size(), 5);
+        Assert.assertEquals(newPlan.getLeft().get().getRelationships(), relationshipList);
+        Assert.assertTrue(newPlan.getLeft().get().isComplete());
+    }
+
+    @Test
+    public void shouldResolveConflictByDegradation() {
+        Condition a = new Condition("a");
+        Condition b = new Condition("b");
+        Condition c = new Condition("c");
+        Condition d = new Condition("d");
+
+        Step initStep = new InitStep(Collections.singletonList(b), "Init step", 0);
+        Step goalStep = new GoalStep(Arrays.asList(c, d), "Goal step", 3);
+        Step step1 = new Step(Arrays.asList(b), Arrays.asList(a), "step1", 1);
+        Step step2 = new Step(Arrays.asList(a), Arrays.asList(d), "step 2", 2);
+        Step step3 = new Step(Arrays.asList(b), Arrays.asList(c, d.negate()), "step 3", 4);
+
+        List<Relationship> relationshipList = Arrays.asList(
+                new Relationship(initStep, step1, b),
+                new Relationship(step1, step2, a),
+                new Relationship(step2, goalStep, d),
+                new Relationship(initStep, step3, b),
+                new Relationship(step3, goalStep, c)
+        );
+
+        List<List<Step>> steps = Arrays.asList(
+                Arrays.asList(initStep),
+                Arrays.asList(step1),
+                Arrays.asList(step2),
+                Arrays.asList(step3),
+                Arrays.asList(goalStep)
+        );
+
+        Plan plan = new Plan(steps, relationshipList);
+        Either<Plan, Conflict> newPlan = plan.resolveConflicts();
+
+        Assert.assertTrue(newPlan.getLeft().isPresent());
+        Assert.assertTrue(newPlan.getLeft().get().getSteps().get(1).contains(step3));
+        Assert.assertEquals(newPlan.getLeft().get().getSteps().size(), 4);
+        Assert.assertEquals(newPlan.getLeft().get().getRelationships(), relationshipList);
+        Assert.assertTrue(newPlan.getLeft().get().isComplete());
+    }
+
+    @Test
+    public void shouldSolveProblemWithConflicts() {
+        Condition b = new Condition("Sprzedaje(SM, chleb)");
+        Condition c = new Condition("Sprzedaje(SM, mleko)");
+        Condition d = new Condition("Sprzedaje(SM, kwiaty)");
+        Condition e = new Condition("Ma(chleb)");
+        Condition f = new Condition("Ma(kwiaty)");
+        Condition g = new Condition("Ma(mleko)");
+        Condition h = new Condition("W(SM)");
+        Condition j = new Condition("W(dom)");
+
+        Step initStep = new InitStep(Arrays.asList(j, b, c, d), "Init step", 0);
+        Step goalStep = new GoalStep(Arrays.asList(j, e, f, g), "Goal step", 99);
+
+        Operator buyFlower = new Operator(Arrays.asList(h, d), Arrays.asList(f), "Kup(kwiaty)");
+        Operator buyMilk = new Operator(Arrays.asList(h, c), Arrays.asList(g), "Kup(mleko)");
+        Operator buyBread = new Operator(Arrays.asList(h, b), Arrays.asList(e), "Kup(chleb)");
+        Operator goHomeToSM = new Operator(Arrays.asList(j), Arrays.asList(h, j.negate()), "Pójść(dom, SM)");
+        Operator goSMToHome = new Operator(Arrays.asList(h), Arrays.asList(j, h.negate()), "Pójść(SM, dom)");
+
+        Plan plan = Plan.createMinimalPlan(initStep, goalStep);
+        Problem shopProblem = new Problem(Arrays.asList(
+                goHomeToSM, goSMToHome, buyBread, buyFlower, buyMilk), plan);
+
+        Optional<Plan> resultPlan = shopProblem.createCompletePlan();
+
+        Assert.assertTrue(resultPlan.isPresent());
+    }
+
+    @Test
+    public void shouldGenerateAllCombinationOfVariablesValues() {
+        Variable v1 = new Variable("src", "A", "B", "C");
+        Variable v2 = new Variable("dest", "B", "C", "D");
+
+        List<Condition> conditions = Condition.createConditionsFromParameters("testFN", v1, new Constant("2"), v2);
+
+        Assert.assertEquals(conditions.size(), 9);
+        Assert.assertTrue(conditions.contains(new Condition("testFN(B, 2, D)")));
+        Assert.assertTrue(conditions.contains(new Condition("testFN(A, 2, D)")));
+        Assert.assertTrue(conditions.contains(new Condition("testFN(C, 2, D)")));
+        Assert.assertTrue(conditions.contains(new Condition("testFN(A, 2, B)")));
     }
 }

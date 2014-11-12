@@ -2,7 +2,7 @@ package dedep.blanus;
 
 import java.util.List;
 
-public class Step extends MovementOperator {
+public class Step extends Operator {
     private int id;
 
     public Step(List<Condition> preconditions, List<Condition> effects, String name, int id) {
