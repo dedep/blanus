@@ -4,6 +4,7 @@ import dedep.blanus.param.Constant;
 import dedep.blanus.param.Variable;
 import dedep.blanus.util.Either;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -88,8 +89,8 @@ public class ProblemTest {
         Condition rightLeg = new Condition("Right leg");
 
         Step initStep = new InitStep(Collections.emptyList(), "Init step", 0);
-        Step step1 = new Step(Collections.emptyList(), Arrays.asList(rightLeg), "step 1", 1);
-        Step step2 = new Step(Collections.emptyList(), Arrays.asList(leftLeg), "step 2", 2);
+        Step step1 = new Step(Arrays.asList(rightLeg), Arrays.asList(rightLeg), "step 1", 1);
+        Step step2 = new Step(Arrays.asList(leftLeg), Arrays.asList(leftLeg), "step 2", 2);
         Step goalStep = new GoalStep(Arrays.asList(rightLeg), "Goal step", 3);
 
         Plan plan = new Plan(
@@ -242,16 +243,56 @@ public class ProblemTest {
     }
 
     @Test
-    public void shouldGenerateAllCombinationOfVariablesValues() {
-        Variable v1 = new Variable("src", "A", "B", "C");
-        Variable v2 = new Variable("dest", "B", "C", "D");
+    public void shouldGenerateOperators() {
+        Variable src = new Variable("src", "A", "B", "C");
+        Variable dest = new Variable("dest", "B", "C", "D");
 
-        List<Condition> conditions = Condition.createConditionsFromParameters("testFN", v1, new Constant("2"), v2);
+        ConditionTemplate ct1 = new ConditionTemplate("On", dest, src);
+        ConditionTemplate ct2 = new ConditionTemplate("Occupied", dest, new Constant("1"));
 
-        Assert.assertEquals(conditions.size(), 9);
-        Assert.assertTrue(conditions.contains(new Condition("testFN(B, 2, D)")));
-        Assert.assertTrue(conditions.contains(new Condition("testFN(A, 2, D)")));
-        Assert.assertTrue(conditions.contains(new Condition("testFN(C, 2, D)")));
-        Assert.assertTrue(conditions.contains(new Condition("testFN(A, 2, B)")));
+        List<Operator> operators = Operator.generateOperatorsFromConditionsIntersection(
+                Arrays.asList(ct1, ct2),
+                Arrays.asList(ct1, ct2),
+                "Move($src, $dest)"
+        );
+
+        Assert.assertEquals(operators.size(), 9);
+    }
+
+    @Test
+    public void shouldRemoveStepAndAllDependentSteps() {
+        Condition a = new Condition("a");
+        Condition b = new Condition("b");
+        Condition c = new Condition("c");
+        Condition d = new Condition("d");
+
+        Step initStep = new InitStep(Collections.singletonList(b), "Init step", 0);
+        Step goalStep = new GoalStep(Arrays.asList(c, d), "Goal step", 3);
+        Step step1 = new Step(Arrays.asList(b), Arrays.asList(a), "step1", 1);
+        Step step2 = new Step(Arrays.asList(a), Arrays.asList(d), "step 2", 2);
+        Step step3 = new Step(Arrays.asList(b), Arrays.asList(c, d.negate()), "step 3", 4);
+
+        List<Relationship> relationshipList = Arrays.asList(
+                new Relationship(initStep, step1, b),
+                new Relationship(step1, step2, a),
+                new Relationship(initStep, step3, b),
+                new Relationship(step3, goalStep, c)
+        );
+
+        List<List<Step>> steps = Arrays.asList(
+                Arrays.asList(initStep),
+                Arrays.asList(step1),
+                Arrays.asList(step2),
+                Arrays.asList(step3),
+                Arrays.asList(goalStep)
+        );
+
+        Plan plan = new Plan(steps, relationshipList);
+        Plan newPlan = plan.removeStep(step2);
+
+        Assert.assertEquals(newPlan.getSteps().size(), 3);
+        Assert.assertEquals(newPlan.getSteps().get(1).get(0), step3);
+        Assert.assertEquals(newPlan.getRelationships().size(), 2);
+
     }
 }

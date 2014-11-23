@@ -7,7 +7,7 @@ public class Problem {
     private List<Operator> operators;
     private Plan plan;
 
-    private static final int ITERATIONS_UPPER_THRESHOLD = 100;
+    private static final int ITERATIONS_UPPER_THRESHOLD = 90000;
 
     public Problem(List<Operator> operators, Plan plan) {
         this.operators = operators;
@@ -15,22 +15,21 @@ public class Problem {
     }
 
     public Optional<Plan> createCompletePlan() {
-        return createCompletePlan(0);
-    }
+        int iterationAcc = 0;
 
-    private Optional<Plan> createCompletePlan(int iterationsAcc) {
-        if (plan.isComplete()) {
-            return Optional.of(plan);
-        } else if (iterationsAcc >= ITERATIONS_UPPER_THRESHOLD) {
-            return Optional.empty();
+        while (iterationAcc <= ITERATIONS_UPPER_THRESHOLD) {
+            if (plan.isComplete()) {
+                return Optional.of(plan);
+            }
+
+            this.plan = plan.chooseSubgoal()
+                    .map(s -> plan.solveSubgoal(s, operators))
+                    .orElse(plan);
+
+            iterationAcc++;
         }
 
-        Plan newPlan = plan.chooseSubgoal()
-                .map(s -> plan.solveSubgoal(s, operators))
-                .orElse(plan.resolveConflicts()
-                        .map(plan -> plan, conflict -> plan.makeReturn(conflict, operators)));
-
-        return new Problem(operators, newPlan).createCompletePlan(iterationsAcc + 1);
+        return Optional.empty();
     }
 
     public Plan getCurrentPlan() {

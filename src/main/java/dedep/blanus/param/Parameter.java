@@ -14,4 +14,21 @@ public abstract class Parameter {
     public String getName() {
         return name;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Parameter parameter = (Parameter) o;
+
+        if (name != null ? !name.equals(parameter.name) : parameter.name != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return name != null ? name.hashCode() : 0;
+    }
 }
