@@ -1,5 +1,7 @@
-package dedep.blanus;
+package dedep.blanus.plan;
 
+import dedep.blanus.condition.Condition;
+import dedep.blanus.step.Step;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.util.Optional;
@@ -31,5 +33,11 @@ public class Relationship {
 
     public boolean containsStep(Step step) {
         return relationship.left.equals(step) || relationship.right.equals(step);
+    }
+
+    @Override
+    public String toString() {
+        return relationship.getLeft().getId() + " -> " + relationship.getRight().getId() + " (" +
+                relationshipCondition.map(Condition::getValue).orElse("NONE") + ")";
     }
 }

@@ -1,5 +1,7 @@
-package dedep.blanus;
+package dedep.blanus.step;
 
+import dedep.blanus.condition.Condition;
+import dedep.blanus.condition.ConditionTemplate;
 import dedep.blanus.param.Parameter;
 import dedep.blanus.param.Variable;
 
@@ -97,5 +99,12 @@ public class Operator {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public String toString() {
+        return "preconditions=" + preconditions +
+                ", effects=" + effects +
+                ", name=" + name;
     }
 }

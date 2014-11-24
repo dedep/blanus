@@ -1,4 +1,6 @@
-package dedep.blanus;
+package dedep.blanus.step;
+
+import dedep.blanus.condition.Condition;
 
 import java.util.List;
 
@@ -12,5 +14,13 @@ public class Step extends Operator {
 
     public int getId() {
         return id;
+    }
+
+    @Override
+    public String toString() {
+        return "Step{" +
+                "id=" + id + ", " +
+                super.toString() +
+                '}';
     }
 }

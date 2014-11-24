@@ -1,11 +1,20 @@
 package dedep.blanus;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import dedep.blanus.report.LoggingStrategy;
+import dedep.blanus.report.ReportContext;
 
 public class App {
-    public static void main(String[] args) {
 
+    private static ReportContext context = null;
+
+    public static void main(String[] args) {
+    }
+
+    public static ReportContext getReportContext() {
+        if (context == null) {
+            context = new ReportContext(new LoggingStrategy());
+        }
+
+        return context;
     }
 }

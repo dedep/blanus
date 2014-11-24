@@ -1,18 +1,33 @@
-package dedep.blanus;
+package dedep.blanus.problem;
 
+import dedep.blanus.condition.Condition;
+import dedep.blanus.condition.ConditionTemplate;
 import dedep.blanus.param.Variable;
+import dedep.blanus.plan.Plan;
+import dedep.blanus.step.GoalStep;
+import dedep.blanus.step.InitStep;
+import dedep.blanus.step.Operator;
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.Test;
-import org.junit.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class HanoiProblemTest {
+public class HanoiProblem extends Problem {
 
-    public List<Operator> getHanoiOperators(int n) {
+    private int n;
+
+    public HanoiProblem(int n) {
+        this.n = n;
+
+        setOperators(getHanoiOperators());
+        setPlan(Plan.createMinimalPlan(getInitStep(), getGoalStep()));
+    }
+
+    private List<Operator> getHanoiOperators() {
         String[] discs = IntStream.rangeClosed(1, n).mapToObj(Integer::toString).toArray(String[]::new);
         String[] elements = ArrayUtils.addAll(discs, "A", "B", "C");
 
@@ -54,7 +69,7 @@ public class HanoiProblemTest {
                 .collect(Collectors.toList());
     }
 
-    private InitStep getInitStep(int n) {
+    private InitStep getInitStep() {
         List<Condition> initStepEffects = new ArrayList<>();
 
         initStepEffects.addAll(Arrays.asList(new Condition("Wolny(B)"), new Condition("Wolny(C)"), new Condition("Wolny(1)")));
@@ -76,7 +91,7 @@ public class HanoiProblemTest {
         return new InitStep(initStepEffects, "Init step", 1);
     }
 
-    private GoalStep getGoalStep(int n) {
+    private GoalStep getGoalStep() {
         List<Condition> goalStepPreconds = new ArrayList<>();
 
         goalStepPreconds.addAll(IntStream.rangeClosed(2, n)
@@ -85,31 +100,5 @@ public class HanoiProblemTest {
         goalStepPreconds.add(new Condition("Na(C, " + n + ")"));
 
         return new GoalStep(goalStepPreconds, "Goal step", 2);
-    }
-
-    @Test
-    public void hanoi2ProblemTest() {
-        InitStep initStep = getInitStep(2);
-        GoalStep goalStep = getGoalStep(2);
-
-        Plan hanoiPlan = Plan.createMinimalPlan(initStep, goalStep);
-        Problem hanoiProblem = new Problem(getHanoiOperators(2), hanoiPlan);
-
-        Optional<Plan> completePlan = hanoiProblem.createCompletePlan();
-
-        Assert.assertTrue(completePlan.isPresent());
-    }
-
-    @Test
-    public void hanoi3ProblemTest() {
-        InitStep initStep = getInitStep(3);
-        GoalStep goalStep = getGoalStep(3);
-
-        Plan hanoiPlan = Plan.createMinimalPlan(initStep, goalStep);
-        Problem hanoiProblem = new Problem(getHanoiOperators(3), hanoiPlan);
-
-        Optional<Plan> completePlan = hanoiProblem.createCompletePlan();
-
-        Assert.assertTrue(completePlan.isPresent());
     }
 }

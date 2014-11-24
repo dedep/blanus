@@ -1,4 +1,4 @@
-package dedep.blanus;
+package dedep.blanus.condition;
 
 import dedep.blanus.param.Constant;
 import dedep.blanus.param.Parameter;

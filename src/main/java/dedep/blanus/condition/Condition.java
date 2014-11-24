@@ -1,11 +1,4 @@
-package dedep.blanus;
-
-import dedep.blanus.param.Constant;
-import dedep.blanus.param.Parameter;
-import dedep.blanus.param.Variable;
-
-import java.util.*;
-import java.util.stream.Collectors;
+package dedep.blanus.condition;
 
 public class Condition {
     private String value;
@@ -41,6 +34,11 @@ public class Condition {
     @Override
     public int hashCode() {
         return value.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return value;
     }
 }
 

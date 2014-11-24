@@ -1,4 +1,7 @@
-package dedep.blanus;
+package dedep.blanus.plan;
+
+import dedep.blanus.condition.Condition;
+import dedep.blanus.step.Step;
 
 import java.util.Optional;
 
@@ -41,5 +44,13 @@ public class Subgoal {
         int result = condition != null ? condition.hashCode() : 0;
         result = 31 * result + (step != null ? step.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Subgoal{" +
+                "condition=" + condition.map(Object::toString).orElse("NONE") +
+                ", stepID=" + step.getId() +
+                '}';
     }
 }

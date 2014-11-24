@@ -1,4 +1,6 @@
-package dedep.blanus;
+package dedep.blanus.plan;
+
+import dedep.blanus.step.Step;
 
 public class Conflict {
     private Step step;
@@ -15,5 +17,13 @@ public class Conflict {
 
     public Relationship getRelationship() {
         return relationship;
+    }
+
+    @Override
+    public String toString() {
+        return "Conflict{" +
+                "stepID=" + step.getId() +
+                ", relationship=" + relationship +
+                '}';
     }
 }

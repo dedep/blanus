@@ -1,4 +1,6 @@
-package dedep.blanus;
+package dedep.blanus.step;
+
+import dedep.blanus.condition.Condition;
 
 import java.util.Collections;
 import java.util.List;

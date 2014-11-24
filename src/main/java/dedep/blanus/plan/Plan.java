@@ -1,5 +1,11 @@
-package dedep.blanus;
+package dedep.blanus.plan;
 
+import dedep.blanus.App;
+import dedep.blanus.condition.Condition;
+import dedep.blanus.step.GoalStep;
+import dedep.blanus.step.InitStep;
+import dedep.blanus.step.Operator;
+import dedep.blanus.step.Step;
 import dedep.blanus.util.Either;
 
 import java.util.*;
@@ -32,12 +38,21 @@ public class Plan {
 
     public Plan solveSubgoal(Subgoal subgoal, List<Operator> operators, boolean tryBindingToExistingStep) {
         if (subgoal.getCondition().isPresent()) {
+            App.getReportContext().report("Solving " + subgoal.toString() + " in " + this.toString());
+
             Plan planWithConflicts;
 
             if (tryBindingToExistingStep) {
-                planWithConflicts = solveByBindingToExistingStep(subgoal)
-                        .orElse(solveByAddingNewStep(subgoal, operators)
-                        .orElse(removeStep(subgoal.getStep())));
+                Optional<Plan> solvedByRelationshipPlan = solveByBindingToExistingStep(subgoal);
+                Optional<Plan> solvedByStepPlan = solveByAddingNewStep(subgoal, operators);
+
+                if (solvedByRelationshipPlan.isPresent()) {
+                    planWithConflicts = solvedByRelationshipPlan.get();
+                } else if (solvedByStepPlan.isPresent()) {
+                    planWithConflicts = solvedByStepPlan.get();
+                } else {
+                    planWithConflicts = removeStep(subgoal.getStep());
+                }
             } else {
                 planWithConflicts = solveByAddingNewStep(subgoal, operators)
                                 .orElse(removeStep(subgoal.getStep()));
@@ -58,6 +73,8 @@ public class Plan {
         if (conflicts.isEmpty()) {
             return Either.left(this);
         }
+
+        App.getReportContext().report("Found " + conflicts.size() + " conflicts: " + conflicts);
 
         Conflict conflict = conflicts.get(0);
 
@@ -134,6 +151,7 @@ public class Plan {
         Plan newPlan = new Plan(newOrderedSteps, relationships);
 
         if (newPlan.getConflicts().isEmpty()) {
+            App.getReportContext().report("Solving conflict: " + conflict + " by step promotion.");
             return Optional.of(new Plan(newOrderedSteps, relationships));
         } else {
             return Optional.empty();
@@ -178,6 +196,7 @@ public class Plan {
         Plan newPlan = new Plan(newOrderedSteps, relationships);
 
         if (newPlan.getConflicts().isEmpty()) {
+            App.getReportContext().report("Solving conflict: " + conflict + " by step degradation.");
             return Optional.of(new Plan(newOrderedSteps, relationships));
         } else {
             return Optional.empty();
@@ -185,6 +204,8 @@ public class Plan {
     }
 
     public Plan makeReturn(Conflict conflict, List<Operator> operators) {
+        App.getReportContext().report("Removing relationship: " + relationships + " from plan to resolve conflicts.");
+
         List<Relationship> newRelationships = new ArrayList<>(this.relationships);
         newRelationships.remove(conflict.getRelationship());
 
@@ -198,6 +219,9 @@ public class Plan {
         if (stepToRemove == null || stepToRemove instanceof GoalStep || stepToRemove instanceof InitStep) {
             return this;
         }
+
+        App.getReportContext().report("Removing step with ID=" + stepToRemove.getId() + " from plan due to lack of " +
+                "relationships or/and cannot fulfill its preconditions.");
 
         List<List<Step>> stepsListWithoutStep = removeStepFromList(stepToRemove, orderedSteps);
         List<Relationship> relationshipsWithoutStep =
@@ -265,8 +289,10 @@ public class Plan {
 
         Optional<Step> stepFullfilingSubgoal = flattenedSteps.stream().filter(s -> s.getEffects().contains(subgoal.getCondition().get())).findFirst();
         return stepFullfilingSubgoal.map(step -> {
+            Relationship newRelationship = new Relationship(step, subgoal.getStep(), subgoal.getCondition());
+            App.getReportContext().report("Solving subgoal with a new relationship: " + newRelationship);
             List<Relationship> relationships = new ArrayList<>(this.relationships);
-            relationships.add(new Relationship(step, subgoal.getStep(), subgoal.getCondition()));
+            relationships.add(newRelationship);
 
             return new Plan(orderedSteps, relationships);
         });
@@ -280,7 +306,10 @@ public class Plan {
                 .findFirst()
                 .flatMap(operator -> {
                     Step newStep = new Step(operator.getPreconditions(), operator.getEffects(), operator.getName(), new Random().nextInt());
-                    return addStepToPlan(newStep, subgoal);
+                    Optional<Plan> result = addStepToPlan(newStep, subgoal);
+                    result.ifPresent(r -> App.getReportContext().report("Solving subgoal with a new step: " + newStep));
+
+                    return result;
                 });
     }
 
@@ -351,5 +380,18 @@ public class Plan {
 
     public List<Relationship> getRelationships() {
         return Collections.unmodifiableList(relationships);
+    }
+
+    @Override
+    public String toString() {
+        return "Plan {\n" +
+                "\tSTEPS: \n" +
+                orderedSteps.stream()
+                        .map(l -> l.stream().map(s -> "\t" + s.toString())
+                                .collect(Collectors.joining("\n\t\t", "\t\t" + Integer.toString(orderedSteps.indexOf(l)) + ") ", "\n")))
+                        .collect(Collectors.joining()) +
+                "\tRELATIONSHIPS:\n" + relationships.stream().map(r -> "\t\t\t" + r.toString())
+                    .collect(Collectors.joining("\n")) +
+                "\n}";
     }
 }

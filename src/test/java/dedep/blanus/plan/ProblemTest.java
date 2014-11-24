@@ -1,10 +1,20 @@
-package dedep.blanus;
+package dedep.blanus.plan;
 
+import dedep.blanus.condition.Condition;
+import dedep.blanus.condition.ConditionTemplate;
 import dedep.blanus.param.Constant;
 import dedep.blanus.param.Variable;
+import dedep.blanus.plan.Conflict;
+import dedep.blanus.plan.Plan;
+import dedep.blanus.plan.Relationship;
+import dedep.blanus.plan.Subgoal;
+import dedep.blanus.problem.Problem;
+import dedep.blanus.step.GoalStep;
+import dedep.blanus.step.InitStep;
+import dedep.blanus.step.Operator;
+import dedep.blanus.step.Step;
 import dedep.blanus.util.Either;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
