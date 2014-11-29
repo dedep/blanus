@@ -49,6 +49,7 @@ public class HanoiProblem extends Problem {
                         new ConditionTemplate("!Na", source, disc),
                         new ConditionTemplate("!Wolny", dest)
                 ),
+                constants -> true,
                 "Move($disc, $source, $dest)"
         );
 

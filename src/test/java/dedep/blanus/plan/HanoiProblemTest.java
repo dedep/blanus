@@ -2,6 +2,7 @@ package dedep.blanus.plan;
 
 import dedep.blanus.problem.HanoiProblem;
 import dedep.blanus.problem.Problem;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.Assert;
 
@@ -18,6 +19,7 @@ public class HanoiProblemTest {
         Assert.assertTrue(completePlan.isPresent());
     }
 
+    @Ignore
     @Test
     public void hanoi3ProblemTest() {
         Problem hanoiProblem = new HanoiProblem(3);

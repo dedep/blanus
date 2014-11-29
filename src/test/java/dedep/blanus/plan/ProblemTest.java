@@ -18,6 +18,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class ProblemTest {
 
@@ -263,10 +264,11 @@ public class ProblemTest {
         List<Operator> operators = Operator.generateOperatorsFromConditionsIntersection(
                 Arrays.asList(ct1, ct2),
                 Arrays.asList(ct1, ct2),
+                constants -> !constants.get(0).getName().equals(constants.get(1).getName()),
                 "Move($src, $dest)"
         );
 
-        Assert.assertEquals(operators.size(), 9);
+        Assert.assertEquals(operators.size(), 7);
     }
 
     @Test
@@ -304,5 +306,19 @@ public class ProblemTest {
         Assert.assertEquals(newPlan.getSteps().get(1).get(0), step3);
         Assert.assertEquals(newPlan.getRelationships().size(), 2);
 
+    }
+
+    @Test
+    public void shouldGenerateAllCombinationOfVariablesValues() {
+        Variable v1 = new Variable("src", "A", "B", "C");
+        Variable v2 = new Variable("dest", "B", "C", "D");
+
+        List<Condition> conditions = Condition.createConditionsFromParameters("testFN", v1, new Constant("2"), v2);
+
+        Assert.assertEquals(conditions.size(), 9);
+        Assert.assertTrue(conditions.contains(new Condition("testFN(B, 2, D)")));
+        Assert.assertTrue(conditions.contains(new Condition("testFN(A, 2, D)")));
+        Assert.assertTrue(conditions.contains(new Condition("testFN(C, 2, D)")));
+        Assert.assertTrue(conditions.contains(new Condition("testFN(A, 2, B)")));
     }
 }

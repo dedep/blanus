@@ -28,7 +28,7 @@ public class Problem {
 
         while (iterationAcc <= ITERATIONS_UPPER_THRESHOLD) {
             if (plan.isComplete()) {
-                App.getReportContext().report("Problem Solved! Final plan: " + plan.toString());
+                App.getReportContext().report("\nProblem Solved! Final plan: " + plan.toString());
                 return Optional.of(plan);
             }
 

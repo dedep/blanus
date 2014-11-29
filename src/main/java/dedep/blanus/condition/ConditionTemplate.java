@@ -4,11 +4,9 @@ import dedep.blanus.param.Constant;
 import dedep.blanus.param.Parameter;
 import dedep.blanus.param.Variable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ConditionTemplate {
 
@@ -62,5 +60,36 @@ public class ConditionTemplate {
                 .collect(Collectors.joining(", ")) + ")";
 
         return new Condition(value);
+    }
+
+    public static List<ConditionTemplate> parseList(String input, List<Parameter> params) {
+        return Stream.of(input.split(";")).map(String::trim).map(s -> parse(s, params)).collect(Collectors.toList());
+    }
+
+    private static ConditionTemplate parse(String input, List<Parameter> params) {
+        if ("".equals(input)) {
+            throw new IllegalArgumentException("Cannot parse ConditionTemplate from empty string");
+        }
+
+        String[] parsed = input.split("\\)|\\(");
+        String name = parsed[0].trim();
+        Parameter[] arguments = new Parameter[0];
+
+        if (parsed.length > 1) {
+            arguments = Stream.of(parsed[1].split(",")).map(String::trim).map(s -> {
+                if (s.startsWith("$")) {
+                    Optional<Parameter> param = params.stream().filter(p -> p.getName().equals(s)).findFirst();
+                    if (param.isPresent()) {
+                        return param.get();
+                    } else {
+                        throw new IllegalArgumentException("Unknown variable: " + s);
+                    }
+                } else {
+                    return new Constant(s);
+                }
+            }).toArray(Parameter[]::new);
+        }
+
+        return new ConditionTemplate(name, arguments);
     }
 }
