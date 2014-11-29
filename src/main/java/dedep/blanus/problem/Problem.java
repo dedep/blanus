@@ -12,7 +12,7 @@ public class Problem {
     private List<Operator> operators;
     private Plan plan;
 
-    private static final int ITERATIONS_UPPER_THRESHOLD = 200000;
+    private static final int ITERATIONS_UPPER_THRESHOLD = 20000;
 
     public Problem(List<Operator> operators, Plan plan) {
         this.operators = operators;

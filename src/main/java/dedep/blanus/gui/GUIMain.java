@@ -7,6 +7,7 @@ public class GUIMain {
 
     public static void createAndShowGUI() {
         JFrame frame = new MainFrame();
+        frame.setTitle("Blanus");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
